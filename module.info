@@ -1,0 +1,9 @@
+{
+    "author": "n3d.b0y",
+    "description": "The module uses the service functionality https://www.onlinehashcrack.com",
+    "devices": [
+        "tetra"
+    ],
+    "title": "Handshake Crack",
+    "version": "1.0"
+}
