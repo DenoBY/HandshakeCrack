@@ -5,12 +5,16 @@
  */
 namespace pineapple;
 
+putenv('LD_LIBRARY_PATH='.getenv('LD_LIBRARY_PATH').':/sd/lib:/sd/usr/lib');
+putenv('PATH='.getenv('PATH').':/sd/usr/bin:/sd/usr/sbin');
+
 class HandshakeCrack extends Module
 {
-    const LOG_FILE_SEND_HANDSHAKE = '/tmp/handshakesend.log';
-    const BASH_SCRIP_SEND_HANDSHAKE = '/pineapple/modules/HandshakeCrack/scripts/handshake.sh';
-    const BASH_SCRIP_CONVERTER = '/pineapple/modules/HandshakeCrack/scripts/converter.sh';
-    const PYTHON_SCRIPT_PARSEG_PCAP = '/pineapple/modules/HandshakeCrack/scripts/parser_pcap.py';
+    const PATH_MODULE = '/pineapple/modules/HandshakeCrack';
+    const PATH_MODULE_SD = '/sd/modules/HandshakeCrack';
+    const BASH_SCRIP_SEND_HANDSHAKE = '/scripts/handshake.sh';
+    const BASH_SCRIP_CONVERTER = '/scripts/converter.sh';
+    const PYTHON_SCRIPT_PARSEG_PCAP = '/scripts/parser_pcap.py';
 
     public function route()
     {
@@ -49,6 +53,16 @@ class HandshakeCrack extends Module
                 $this->isConnected();
                 break;
         }
+    }
+
+    protected function getPathModule() {
+        $isAvailable = $this->isSDAvailable();
+
+        if ($isAvailable) {
+            return self::PATH_MODULE_SD;
+        }
+
+        return self::PATH_MODULE;
     }
 
     protected function getInfo()
@@ -121,15 +135,20 @@ class HandshakeCrack extends Module
     private function getHandshakeFiles()
     {
         exec("find -L /pineapple/modules/ -type f -name \"*.**cap\" 2>&1", $dir1);
-        exec("find -L /tmp/ -type f -name \"*.**cap\" 2>&1", $dir2);
+        exec("find -L /sd/modules/ -type f -name \"*.**cap\" 2>&1", $dir2);
+        exec("find -L /tmp/ -type f -name \"*.**cap\" 2>&1", $dir3);
 
-        $this->response = array("files" => array_merge($dir1, $dir2));
+        if (stristr($dir2[0], ' No such file or ')) {
+            $dir2 = [];
+        }
+
+        $this->response = array("files" => array_merge($dir1, $dir2, $dir3));
     }
 
     private function getHandshakeInfo()
     {
         if (!empty($this->request->path)) {
-            exec('python ' . self::PYTHON_SCRIPT_PARSEG_PCAP . ' -i ' . $this->request->path, $output);
+            exec('python ' . $this->getPathModule() . self::PYTHON_SCRIPT_PARSEG_PCAP . ' -i ' . $this->request->path, $output);
             $outputArr = preg_split('/\s+/', $output[0]);
 
             if (!empty($outputArr)) {
@@ -147,13 +166,13 @@ class HandshakeCrack extends Module
 
     private function sendHandshake()
     {
-        exec(self::BASH_SCRIP_SEND_HANDSHAKE . " " . $this->request->file, $output);
+        exec($this->getPathModule() . self::BASH_SCRIP_SEND_HANDSHAKE . " " . $this->request->file, $output);
         $this->response = array('output' => $output);
     }
 
     private function converter()
     {
-        exec(self::BASH_SCRIP_CONVERTER . " " . $this->request->file, $output);
+        exec($this->getPathModule() . self::BASH_SCRIP_CONVERTER . " " . $this->request->file, $output);
 
         $this->response = array('output' => $output[0]);
     }

@@ -31,7 +31,7 @@ registerController('HandshakeCrack_IsConnected', ['$api', '$scope', '$rootScope'
         } else {
             isConnected();
         }
-    }, 5000);
+    }, 3000);
 }]);
 
 registerController('HandshakeCrack_Dependencies', ['$api', '$scope', '$rootScope', '$interval', function ($api, $scope, $rootScope, $interval) {
